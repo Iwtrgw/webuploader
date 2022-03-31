@@ -1,0 +1,12 @@
+host:
+  # 监听端口
+  port: :8000
+
+# Websocket 配置
+websocket:
+  # Address
+  host: 10.100.100.136
+  # 端口
+  port: :8000
+  # 协议类型
+  proto: ws://

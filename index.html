@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<button id="btn">获取屏幕</button>
+<button id="btn2">获取摄像头</button>
+<button id="btn3">停止摄像头</button>
+<video autoplay width="800" height="600" id="video"></video>
+<video autoplay width="800" height="600" id="video2"></video>
+
+</body>
+<script>
+    let btn = document.querySelector('#btn');
+    let btn2 = document.querySelector('#btn2');
+
+
+    // 获取屏幕
+    let ws_url = {{.}}
+
+    function checkWsUrl(url) {
+        if (!url){
+            alert("推流地址获取失败")
+            return false
+        }
+        return true
+    }
+
+    btn.onclick = async function () {
+        let displayMediaOptions = {video: true, audio: true};
+
+        let captureStream = null;
+        try {
+            captureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+            let video = document.querySelector('#video');
+            if ("srcObject" in video) {
+                video.srcObject = captureStream;
+            } else {
+                video.src = window.URL.createObjectURL(captureStream);
+            }
+            if (checkWsUrl(ws_url)){
+                let ws1 = new WebSocket(ws_url+'/display')
+                ws1.onopen = function (event) {
+                    console.log(event)
+                    console.log('websocket 连接成功！' + this.readyState)
+                }
+                ws1.onmessage = function (event) {
+                    console.log(ws1.binaryType)
+                }
+                ws1.onerror = function (event) {
+                    console.log(event)
+                }
+                ws1.onclose = function (event) {
+                    console.log("websocket连接关闭" + this.readyState)
+                }
+                let mediaRecorder = new MediaRecorder(captureStream);
+                mediaRecorder.ondataavailable = function (blob)  {
+                    ws1.send(blob.data)
+                }
+
+                mediaRecorder.start(10000);
+                captureStream.getVideoTracks()[0].onended = function () {
+                    console.log("停止");
+                    mediaRecorder.stop();
+                    ws1.close();
+                }
+            }
+        } catch (err) {
+            console.log("Error:" +err);
+            return
+        }
+    }
+
+    // 摄像头、麦克风
+    btn2.onclick = async function(){
+        let video2 = document.querySelector("#video2");
+        let btn3 = document.querySelector("#btn3");
+        let cameraSteam = null
+        try{
+            cameraSteam = await navigator.mediaDevices.getUserMedia({audio: true, video: {width: 1280, height: 720}})
+            if ("srcObject" in video2) {
+                video2.srcObject = cameraSteam;
+            } else {
+                video2.src = window.URL.createObjectURL(cameraSteam);
+            }
+            if (checkWsUrl(ws_url)){
+                let ws = new WebSocket(ws_url+"/camera")
+                ws.onopen = function (event) {
+                    console.log(event)
+                    console.log('websocket 连接成功！' + this.readyState)
+                }
+                ws.onmessage = function (event) {
+                    console.log(ws.binaryType)
+                }
+                ws.onerror = function (event) {
+                    console.log(event)
+                }
+                ws.onclose = function (event) {
+                    console.log("websocket连接关闭" + this.readyState)
+                }
+                let mediaRecorder = new MediaRecorder(cameraSteam);
+                mediaRecorder.ondataavailable = function (blob)  {
+                    ws.send(blob.data)
+                }
+
+                mediaRecorder.start(10000);
+                btn3.onclick = function () {
+                    console.log('停止');
+                    mediaRecorder.stop();
+                    ws.close()
+                }
+            }
+        }catch (error){
+            console.log("Error:" +error);
+            return
+        }
+    }
+
+    // 获取摄像头
+    // btn2.onclick = getCamer;
+    /*function getCamer() {
+        let video2 = document.querySelector("#video2");
+        let ws = new WebSocket("ws://10.100.100.136:8000/camera")
+        ws.onopen = function (event) {
+            console.log(event)
+            alert('websocket 连接成功！' + this.readyState)
+        }
+        ws.onmessage = function (event) {
+            console.log(event.data)
+        }
+        ws.onerror = function (event) {
+            console.log('websocket连接异常')
+        }
+        ws.onclose = function (event) {
+            console.log("websocket连接关闭" + this.readyState)
+        }
+        navigator.mediaDevices.getUserMedia({audio: true, video: {width: 1280, height: 720}}).then((res) => {
+            if ("srcObject" in video2) {
+                video2.srcObject = res;
+            } else {
+                video2.src = window.URL.createObjectURL(res);
+            }
+
+            let mediaRecorder = new MediaRecorder(res, {
+                videoBitsPerSecond: 5000000,  // 视频码率
+                mimeType: 'video/webm;codecs=h264' // 编码格式
+            });
+            mediaRecorder.ondataavailable = function (blod) {
+                /!*let reader = new FileReader();
+                reader.readAsDataURL(blod.data)
+                reader.onload = function (ev) {
+
+                    console.log(ev.target.result)
+                    let deco = new TextEncoder();
+                    let data = {
+                        file_name: file.name,
+                        file: ev.target.result,
+                        size: file.size
+                    }
+                    ws.send(deco.encode(JSON.stringify(data)))
+                }*!/
+                /!*let deco = new TextEncoder();
+                let data = {
+                    file_name: file.name,
+                    file: blod.data,
+                    size: file.size
+                }*!/
+                // uploadToGOServer(blod.data);
+                // ws.send(deco.encode(JSON.stringify(data)))
+                // console.log(blod.data.toString())
+                ws.send(blod.data)
+            }
+            mediaRecorder.start(1000 * 10);
+            btn3.onclick = function () {
+                console.log('停止');
+                mediaRecorder.stop();
+            }
+
+            // 上传
+            function uploadToGOServer(blob) {
+                var file = new File([blob], 'msr-' + (new Date).toISOString().replace(/:|\./g, '-') + '.webm', {
+                    type: 'video/webm'
+                });
+
+                // create FormData
+                var formData = new FormData();
+                formData.append('video-filename', file.name);
+                formData.append('video-blob', file);
+                console.log(formData);
+                makeXMLHttpRequest('http://127.0.0.1:8000/upload', formData, function () {
+                    var downloadURL = 'http://127.0.0.1:8000/upload' + file.name;
+                    console.log('File uploaded to this path:', downloadURL);
+                });
+            }
+
+            function makeXMLHttpRequest(url, data, callback) {
+                var request = new XMLHttpRequest();
+                request.onreadystatechange = function () {
+                    if (request.readyState == 4 && request.status == 200) {
+                        callback();
+                    }
+                };
+                request.open('POST', url);
+                request.send(data);
+            }
+
+            //  上传结束
+        })
+            .catch(function (err) {
+                console.log(err.name + ": " + err.message);
+            });
+
+
+    }*/
+</script>
+
+</html>
