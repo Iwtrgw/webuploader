@@ -27,6 +27,12 @@ func init() {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config/")
 
+	// 设置默认值
+	viper.SetDefault("host.port", ":8000")
+	viper.SetDefault("websocket.proto", "ws://")
+	viper.SetDefault("websocket.host", "127.0.0.1")
+	viper.SetDefault("websocket.port", ":8000")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatalln(fmt.Errorf("配置文件读取失败:%s", err))
