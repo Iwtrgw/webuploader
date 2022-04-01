@@ -96,7 +96,7 @@ func wsCamera(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("升级Websocket失败")
 		return
 	}
-	log.Println(r.Proto)
+	log.Println(r.RequestURI)
 	fileName := ws.RemoteAddr().String() + "_" + time.Now().Format("2006-01-02 15:04:05") + ".mp4"
 	filePath := "videos/"
 	defer ws.Close()
@@ -134,7 +134,7 @@ func wsDisplay(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("升级Websocket失败")
 		return
 	}
-	log.Println(r.Proto)
+	log.Println(r.RequestURI)
 	fileName := ws.RemoteAddr().String() + "_display_" + time.Now().Format("2006-01-02 15:04:05") + ".mp4"
 	filePath := "videos/"
 	f, _ := os.Create(filePath + fileName)
