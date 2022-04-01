@@ -227,7 +227,9 @@ func main() {
 	http.HandleFunc("/upload", uploadVideo)
 	http.HandleFunc("/camera", wsCamera)
 	http.HandleFunc("/display", wsDisplay)
-	host := "0.0.0.0"
 	port := viper.GetString("host.port")
-	http.ListenAndServe(host+port, nil)
+	err := http.ListenAndServe(port, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
