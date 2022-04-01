@@ -5,7 +5,7 @@ host:
 # Websocket 配置
 websocket:
   # Address
-  host: 10.100.100.136
+  host: 127.0.0.1
   # 端口
   port: :8000
   # 协议类型
